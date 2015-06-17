@@ -3,9 +3,9 @@ SparkFun Speed Trap
 
 This is a project demonstrating how to display instantaneous speed from a LIDAR on two [large 7-segment displays](https://www.sparkfun.com/products/8530).
 
-![Speed displayed on wall](https://raw.githubusercontent.com/sparkfun/1.jpg)
+![Speed displayed on wall](https://github.com/sparkfun/Speed_Trap/blob/master/Wall%20Display.png)
 
-!*Note the handprints on the wall...*
+*Note the handprints on the wall...*
 
 The new [LIDAR-Lite](https://www.sparkfun.com/products/13167) from PulsedLight is pretty nice. It outputs readings very quickly. From multiple distance readings we can calculate speed (velocity is the derivative of position).
 
