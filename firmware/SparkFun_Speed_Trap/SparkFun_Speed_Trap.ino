@@ -1,21 +1,27 @@
 /*
- Displaying instantaneous speed from a LIDAR on four large 7-segment displays
+ Displaying instantaneous speed from a LIDAR on two large 7-segment displays
  By: Nathan Seidle
  SparkFun Electronics
  Date: January 5th, 2015
  License: This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
 
- The new LIDAR-Lite from PulsedLight is pretty nice. It outputs readings very quickly (). From multiple distance
+ The new LIDAR-Lite from PulsedLight is pretty nice. It outputs readings very quickly. From multiple distance
  readings we can calculate speed (velocity is the derivative of position).
 
-
- Here's how to hook up the Arduino pins to the bq76940 breakout board
-
- Arduino pin A4 (or SDA) -> bq769x0 SDA
- A5 (or SCL) -> SCL
- 2 -> ALERT
- 3.3V -> 3.3V
+ Here's how to hook up the Arduino pins to the Large Digit Driver backpack: 
+ Arduino pin 5 -> LAT
+ 6 -> CLK
+ 7 -> SER
  GND -> GND
+ 5V -> 5V
+ VIN/Barrel Jack -> External 12V supply (this should power the LDD as well)
+ 
+ You'll also need to connect the LIDAR to the Arduino:
+ Arduino 5V -> LIDAR 5V
+ GND -> GND
+ A5 -> SCL
+ A4 -> SDA
+ Enable -> A0
 
 */
 
@@ -31,13 +37,12 @@
 //GPIO declarations
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-//byte distancePin = A0; //Sharp IR analog distance measurement
 byte statLED = 13; //On board status LED
 byte en_LIDAR = A0; //Low makes LIDAR go to sleep, high is normal operation
 
-byte segmentClock = 6; //Mislable. Originally called Enable on schematic.
-byte segmentLatch = 5; //Slight mislabel. Originally called Clock on schematic.
-byte segmentData = 7;
+byte segmentLatch = 5; //Display data when this pin goes high
+byte segmentClock = 6; //Clock one bit on each rising/falling edge
+byte segmentSerial = 7; //Serial data in
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
@@ -72,12 +77,12 @@ void setup()
   pinMode(en_LIDAR, OUTPUT);
   
   pinMode(segmentClock, OUTPUT);
-  pinMode(segmentData, OUTPUT);
   pinMode(segmentLatch, OUTPUT);
+  pinMode(segmentSerial, OUTPUT);
 
   digitalWrite(segmentClock, LOW);
-  digitalWrite(segmentData, LOW);
   digitalWrite(segmentLatch, LOW);
+  digitalWrite(segmentSerial, LOW);
 
   pinMode(statLED, OUTPUT);
 
@@ -119,7 +124,7 @@ void loop()
       digitalWrite(statLED, LOW);
   }
 
-  //Take a reading every 250ms
+  //Take a reading every 50ms
   if (millis() - lastReading > (LOOPTIME-1)) // 49)
   {
     lastReading = millis();
@@ -156,8 +161,7 @@ void loop()
       avgDeltas += (float)deltas[x];
     avgDeltas /= numberOfDeltas;
 
-
-    //22.36936 comes from a big coversion from cm per 250ms to mile per hour
+    //22.36936 comes from a big coversion from cm per 50ms to mile per hour
     float instantMPH = 22.36936 * (float)avgDeltas / (float)LOOPTIME;
     
     instantMPH = abs(instantMPH); //We want to measure as you walk away
@@ -292,7 +296,7 @@ void postNumber(byte number, boolean decimal)
 
   byte segments;
 
-  //6226
+  //This method uses 7946 bytes
   switch (number)
   {
     case 1: segments = b | c; break;
@@ -310,8 +314,8 @@ void postNumber(byte number, boolean decimal)
     case '-': segments = g; break;
   }
 
-  /*6226
-  if(number == 1) segments = b|c;
+  //The method uses 7954 bytes
+  /*if(number == 1) segments = b|c;
   if(number == 2) segments = a|b|d|e|g;
   if(number == 3) segments = a|b|c|d|g;
   if(number == 4) segments = f|g|b|c;
@@ -321,27 +325,29 @@ void postNumber(byte number, boolean decimal)
   if(number == 8) segments = a|b|c|d|e|f|g;
   if(number == 9) segments = a|b|c|d|f|g;
   if(number == 0) segments = a|b|c|d|e|f;
-  if(number == '-') segments = g;
-  */
+  if(number == ' ') segments = 0;
+  if(number == 'c') segments = g | e | d;
+  if(number == '-') segments = g;*/
 
   if (decimal) segments |= dp;
 
   for (byte x = 0 ; x < 8 ; x++)
   {
     digitalWrite(segmentClock, LOW);
-    digitalWrite(segmentData, segments & 1 << (7 - x));
+    digitalWrite(segmentSerial, segments & 1 << (7 - x));
     digitalWrite(segmentClock, HIGH); //Data transfers to the register on the rising edge of SRCK
   }
+}
+
+//Sometimes the LIDAR stops responding. This causes it to reset
+void disableLIDAR()
+{
+  digitalWrite(en_LIDAR, LOW);
 }
 
 void enableLIDAR()
 {
   digitalWrite(en_LIDAR, HIGH);  
-}
-
-void disableLIDAR()
-{
-  digitalWrite(en_LIDAR, LOW);
 }
 
 //Takes an average of readings on a given pin
