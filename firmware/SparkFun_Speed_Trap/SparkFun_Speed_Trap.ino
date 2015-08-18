@@ -21,7 +21,7 @@
  GND -> GND
  A5 -> SCL
  A4 -> SDA
- Enable -> A0
+A0 -> Enable
 
 */
 
