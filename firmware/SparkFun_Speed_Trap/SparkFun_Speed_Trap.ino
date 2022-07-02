@@ -152,7 +152,7 @@ void loop()
     if(safeDelta)
     {
       deltas[deltaSpot++] = deltaDistance;
-      if (deltaSpot > numberOfDeltas) deltaSpot = 0; //Wrap this variable
+      if (deltaSpot >= numberOfDeltas) deltaSpot = 0; //Wrap this variable
     }
 
     //Get average of the current deltas array
